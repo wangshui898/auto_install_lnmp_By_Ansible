@@ -1,0 +1,5 @@
+---
+- name: 配置iptables
+  template: src=iptables dest=/etc/sysconfig/iptables
+  notify:
+    restart iptables

@@ -1,0 +1,42 @@
+# 软件版本
+nginx: ''
+php_version: 'php-7.4.15.tar.gz'
+mysql_version: 'mysql-8.0.23-linux-glibc2.12-x86_64.tar.xz'
+
+# 安装包&临时目录
+lnmp_src_dir: '/usr/local/src/auto_lnmp'
+
+# 安装目录
+nginx_install_dir: '/usr/local/nginx'
+php_install_dir: '/usr/local/php'
+mysql_install_dir: '/usr/local/mysql'
+keepalived_install_dir: '/usr/local/keepalived'
+
+# 数据目录
+mysql_data_dir: '/data/mysql'
+nginx_data_dir: '/data/htdocs'
+
+# 服务用户
+www_user: 'www'
+mysql_user: 'mysql'
+
+# 防火墙开放端口
+lb_port:            # nginx负载均衡开放端口
+  - 80 
+  - 808
+php_port: '80'       # php服务器默认安装nginx和php,只开放80端口
+mysql_port: '3306'   #
+
+# 虚拟主机相关内容
+index01: 
+  - {server_name: "www.index01.com", wwwroot: "/data/htdocs/index01"}
+index02:
+  - {server_name: "www.index02.com", wwwroot: "/data/htdocs/index02"}
+
+# VIP
+vip: '192.168.2.100'
+
+# DNS
+dns:
+  - 192.168.2.1
+  - 223.5.5.5

@@ -1,0 +1,65 @@
+---
+- name: 创建mysql用户组
+  user: name={{ www_user }}
+
+- name: 安装依赖包
+  yum:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - "{{ lib_packages }}"  
+
+- include: libiconv.yml ## 安装libiconv
+
+- name: 解压分发{{ php_version}}
+  unarchive:
+    src={{ lnmp_src_dir }}/{{ php_version }}
+    dest={{ lnmp_src_dir }}
+
+- name: 编译安装PHP
+  shell: |
+    cd {{ lnmp_src_dir }}/php-7* &&
+    ./configure --prefix={{ php_install_dir }} \
+    --with-config-file-path={{ php_install_dir }}/etc \
+    --enable-fpm --with-fpm-user={{ www_user }} --with-fpm-group={{ www_user }} \
+    --enable-mysqlnd --with-mysqli=mysqlnd --with-pdo-mysql=mysqlnd \
+    --enable-cli \
+    --enable-mbstring \
+    --enable-gd \
+    --enable-xml \
+    --enable-soap \
+    --enable-sockets  \
+    --enable-bcmath \
+    --enable-shmop \
+    --enable-ftp \
+    --with-openssl \
+    --with-curl \
+    --with-zlib \
+    --with-iconv= \
+    --with-freetype= \
+    --with-jpeg \
+    --without-pear \
+    --disable-phar \
+    --enable-fpm \
+    --disable-debug &&
+    make -j4 && make install
+
+- name: 分发PHP配置文件
+  tags: init_php
+  template: 
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  with_items:
+    - { src: "php.ini.j2", dest: "{{ php_install_dir }}/etc/php.ini", mode: "0664" }
+    - { src: "php-fpm.conf.j2", dest: "{{ php_install_dir }}/etc/php-fpm.conf", mode: "0664" }
+    - { src: "www.conf.j2", dest: "{{ php_install_dir }}/etc/php-fpm.d/{{ www_user }}.conf", mode: "0664" }
+    - { src: "init.d.php-fpm.j2", dest: "/etc/init.d/php-fpm", mode: "0775" }
+
+- name: php-fpm加入到系统服务
+  tags: init_php
+  shell: chkconfig --add php-fpm
+
+- name: 启动php-fpm
+  tags: init_php
+  service: name=php-fpm state=restarted enabled=yes

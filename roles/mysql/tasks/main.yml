@@ -1,0 +1,51 @@
+---
+- name: 创建mysql用户组
+  user: name={{ mysql_user}}
+
+- name: 创建Mysql目录
+  file: 
+    dest={{ item }} state=directory owner=mysql group=mysql
+  with_items:
+    - "{{ mysql_install_dir }}"
+    - "{{ mysql_data_dir }}"
+    - "{{ mysql_data_dir }}/logs"
+    - "{{ mysql_data_dir }}/binlog"
+
+- name: 安装mysql依赖组件
+  yum:
+    name={{ item }} state=present
+  loop:
+    - libaio 
+    - bison
+    - ncurses
+    - ncurses-devel
+
+- name: 解压分发{{ mysql_version }}
+  unarchive: src={{ lnmp_src_dir }}/{{ mysql_version }} dest={{ lnmp_src_dir }}
+
+- name: 部署Mysql
+  shell: mv {{ lnmp_src_dir}}/mysql-*/* {{ mysql_install_dir }} && chown mysql.mysql {{ mysql_install_dir }} -R
+
+- name: 拷贝Mysql配置文件
+  tags: init_mysql
+  template: src=my.cnf.j2 dest=/etc/my.cnf
+
+- name: 拷贝Mysql配置文件
+  tags: init_mysql
+  template: src=mysqld.j2 dest=/etc/init.d/mysqld owner=mysql group=mysql mode=0775
+
+- name: mysql初始化
+  tags: init_mysql
+  shell: |
+        cd {{ mysql_install_dir }}/bin && 
+        ./mysqld --defaults-file=/etc/my.cnf --initialize \
+        --user={{ mysql_user }} --basedir={{ mysql_install_dir }} --datadir={{ mysql_data_dir }}/data
+
+- name: 配置mysqld加入系统服务
+  tags: init_mysql
+  shell: chkconfig --add mysqld
+
+- name: 启动Mysql
+  tags: init_mysql
+  service: name=mysqld state=restarted enabled=yes
+

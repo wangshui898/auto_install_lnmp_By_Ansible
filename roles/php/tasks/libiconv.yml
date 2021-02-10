@@ -1,0 +1,12 @@
+---
+- name: 解压分发libiconv
+  unarchive:
+    src={{ item }}
+    dest={{ lnmp_src_dir }}
+  with_fileglob:
+    - "{{ lnmp_src_dir }}/libiconv*.tar.gz"
+
+- name: 编译安装libiconv
+  shell: cd {{ lnmp_src_dir }}/libiconv* && \
+         ./configure --prefix=/usr/local/ && \
+         make -j4 && make install
