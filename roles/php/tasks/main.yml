@@ -1,5 +1,5 @@
 ---
-- name: 创建mysql用户组
+- name: 创建nginx用户组
   user: name={{ www_user }}
 
 - name: 安装依赖包
@@ -9,11 +9,9 @@
   loop:
     - "{{ lib_packages }}"  
 
-- include: libiconv.yml ## 安装libiconv
-
-- name: 解压分发{{ php_version}}
+- name: 解压分发{{ nginx_version }}
   unarchive:
-    src={{ lnmp_src_dir }}/{{ php_version }}
+    src={{ lnmp_src_dir }}/{{ nginx_version }}
     dest={{ lnmp_src_dir }}
 
 - name: 编译安装Nginx
@@ -21,14 +19,45 @@
     cd {{ lnmp_src_dir }}/nginx-* && \
     ./configure --prefix={{ nginx_install_dir }} --user=www --group=www --with-http_stub_status_module \
     --with-http_ssl_module --with-http_gzip_static_module --with-http_gunzip_module \
-    --with-stream -with-stream_ssl_module --with-http_realip_module && \
+    --with-stream --with-stream_ssl_module --with-http_realip_module && \
     make -j4 && make install
 
+- name: 创建NGINX虚拟主机目录
+  file: dest={{ vhost_dir }} state=directory
+
 - name: 分发Nginx配置文件
-  template: src={{ item }} dest={{ vhost_dir }}
+  tags: upload_vhost
+  template: src={{ item.src }} dest={{ item.dest }}/{{ item.src.split('.')[:-1]|join('.') }}
   with_items:
-    - index1.conf.j2
-    
+    - { src: 'nginx.conf.j2', dest: "{{ nginx_install_dir }}/conf" }
+    - { src: 'nginx.service.j2', dest: '/usr/lib/systemd/system' }
+
+- name: 启动Nginx
+  systemd: name={{ item }} state=restarted enabled=yes daemon_reload=yes
+  with_items:
+    - nginx
+
+- name: 分发虚拟主机配置
+  tags: upload_vhost
+  template: src={{ item.src }} dest={{ item.dest }}/{{ item.src.split('.')[:-1]|join('.') }}
+  with_items:
+    - { src: 'index01.conf.j2', dest: "{{ vhost_dir }}" }
+
+- name: 创建虚拟主机目录
+  tags: upload_vhost
+  file: dest={{ item }} owner={{ www_user }} group={{ www_user }} state=directory
+  with_items:
+    - "{{ index01[0].wwwroot }}"
+  notify: 
+    reload nginx
+
+- name: 解压分发{{ php_version}}
+  unarchive:
+    src={{ lnmp_src_dir }}/{{ php_version }}
+    dest={{ lnmp_src_dir }}
+
+- include: libiconv.yml ## 安装libiconv
+
 - name: 编译安装PHP
   shell: |
     cd {{ lnmp_src_dir }}/php-7* &&
@@ -76,3 +105,8 @@
 - name: 启动php-fpm
   tags: init_php
   service: name=php-fpm state=restarted enabled=yes
+
+- name: 配置iptables
+  template: src=iptables dest=/etc/sysconfig/iptables
+  notify:
+    restart iptables

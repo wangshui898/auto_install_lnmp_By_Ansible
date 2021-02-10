@@ -7,13 +7,13 @@
     - common
   tags: common
 
-- name: 2.部署mysql
-  gather_facts: no
-  hosts:
-    - mysql
-  roles:
-    - mysql
-  tags: mysql
+#- name: 2.部署mysql
+#  gather_facts: no
+#  hosts:
+#    - mysql
+#  roles:
+#    - mysql
+#  tags: mysql
 
 - name: 3.部署PHP
   gather_facts: no

@@ -25,7 +25,8 @@ mysql_user: 'mysql'
 lb_port:            # nginx负载均衡开放端口
   - 80 
   - 808
-php_port: '80'       # php服务器默认安装nginx和php,只开放80端口
+php_port: 
+  - 80       # php服务器默认安装nginx和php,只开放80端口
 mysql_port: '3306'   #
 
 # 虚拟主机相关内容
