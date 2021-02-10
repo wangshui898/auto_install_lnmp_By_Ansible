@@ -16,6 +16,19 @@
     src={{ lnmp_src_dir }}/{{ php_version }}
     dest={{ lnmp_src_dir }}
 
+- name: 编译安装Nginx
+  shell: |
+    cd {{ lnmp_src_dir }}/nginx-* && \
+    ./configure --prefix={{ nginx_install_dir }} --user=www --group=www --with-http_stub_status_module \
+    --with-http_ssl_module --with-http_gzip_static_module --with-http_gunzip_module \
+    --with-stream -with-stream_ssl_module --with-http_realip_module && \
+    make -j4 && make install
+
+- name: 分发Nginx配置文件
+  template: src={{ item }} dest={{ vhost_dir }}
+  with_items:
+    - index1.conf.j2
+    
 - name: 编译安装PHP
   shell: |
     cd {{ lnmp_src_dir }}/php-7* &&

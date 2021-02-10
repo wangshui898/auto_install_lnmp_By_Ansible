@@ -15,7 +15,6 @@
     - mysql
   tags: mysql
 
-
 - name: 3.部署PHP
   gather_facts: no
   hosts:
@@ -23,3 +22,11 @@
   roles:
     - php
   tags: php
+
+- name: 4.部署HA
+  gather_facts: no
+  hosts:
+    - lb
+  roles:
+    - ha
+  tags: ha

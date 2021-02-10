@@ -1,5 +1,5 @@
 # 软件版本
-nginx: ''
+nginx_version: 'nginx-1.18.0.tar.gz'
 php_version: 'php-7.4.15.tar.gz'
 mysql_version: 'mysql-8.0.23-linux-glibc2.12-x86_64.tar.xz'
 
@@ -15,6 +15,7 @@ keepalived_install_dir: '/usr/local/keepalived'
 # 数据目录
 mysql_data_dir: '/data/mysql'
 nginx_data_dir: '/data/htdocs'
+vhost_dir: "{{ nginx_install_dir }}/conf/vhosts"
 
 # 服务用户
 www_user: 'www'
@@ -35,6 +36,7 @@ index02:
 
 # VIP
 vip: '192.168.2.100'
+nic: 'ens33'
 
 # DNS
 dns:

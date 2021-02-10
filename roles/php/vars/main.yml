@@ -1,5 +1,7 @@
 ---
 lib_packages:
+  - gcc
+  - gcc-c++
   - gd
   - gd-devel
   - autoconf

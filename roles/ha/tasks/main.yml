@@ -1,4 +1,67 @@
 ---
+- name: 创建Nginx用户组
+  user: name={{ www_user }}
+
+- name: 安装依赖库
+  yum: name={{ item }} state=present
+  loop:
+    - gcc
+    - gcc-c++
+    - pcre
+    - pcre-devel
+    - openssl
+    - openssl-devel
+    - libnl
+    - libnl-devel
+
+- name: 解压分发{{ nginx_version }}
+  unarchive:
+    src={{ lnmp_src_dir }}/{{ nginx_version }}
+    dest={{ lnmp_src_dir }}
+
+- name: 编译安装Nginx
+  shell: |
+    cd {{ lnmp_src_dir }}/nginx-* &&
+    ./configure --prefix={{ nginx_install_dir }} --user=www --group=www --with-http_stub_status_module \
+    --with-http_ssl_module --with-http_gzip_static_module --with-http_gunzip_module \
+    --with-stream --with-stream_ssl_module --with-http_realip_module &&
+    make -j4 && make install
+
+- name: 解压分发keepalived
+  unarchive:
+    src={{ item }}
+    dest={{ lnmp_src_dir }}
+  with_fileglob:
+    - "{{ lnmp_src_dir }}/keepalived-*.tar.gz"
+
+- name: 创建keepalived工作目录
+  file: dest={{ item }} state=directory
+  with_items:
+    - /etc/keepalived
+     
+- name: 编译安装keepalived
+  shell: |
+    cd {{ lnmp_src_dir }}/keepalived-* &&
+    ./configure --prefix=/usr/local/keepalived
+    make -j4 && make install
+    ln -s /usr/local/keepalived/etc/sysconfig/keepalived /etc/sysconfig/ |true &&
+    ln -s /usr/local/keepalived/sbin/keepalived /usr/sbin/ |true
+
+- name: 配置HA
+  template: 
+    src={{ item.src }} dest={{ item.dest }}
+  with_items:
+    - { src: 'nginx.conf.j2', dest: "{{ nginx_install_dir }}/conf/nginx.conf" }
+    - { src: 'keepalived.conf.j2', dest: '/etc/keepalived/keepalived.conf' }
+    - { src: 'nginx.service.j2', dest: '/usr/lib/systemd/system/nginx.service' }
+    - { src: 'keepalived.service.j2', dest: '/usr/lib/systemd/system/keepalived.service' }
+
+- name: 启动HA
+  systemd: name={{ item }} state=restarted enabled=yes daemon_reload=yes
+  with_items:
+    - nginx
+    - keepalived
+
 - name: 配置iptables
   template: src=iptables dest=/etc/sysconfig/iptables
   notify:
